@@ -57,4 +57,4 @@ async def on_raw_reaction_add(payload):
                 if payload.emoji.name == '☑️': await payload.member.add_roles(roles[0])
 
 
-sys.run('MTA4NTk5MzY5NDU3NTk5Njk1OA.G-eMnF.94R5zXT_4jdxrEOKm04aLDN3Uo3yM2tUtI5bxc')
+sys.run('MTA4NTk5MzY5NDU3NTk5Njk1OA.GcGPY6.MpjenozAZ77CJSLI4e-cEe9xWevXQ-xzUxLpSE')
