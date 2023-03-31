@@ -7,7 +7,25 @@ import nacl
 import random
 import yt_dlp as youtube_dl
 from collections import defaultdict
+import logging 
 
+
+
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)
+
+fh = logging.FileHandler('pt1x12.log','w',encoding='utf-8')
+fh.setLevel(logging.DEBUG)
+
+ch = logging.StreamHandler()
+ch.setLevel(logging.DEBUG)
+
+formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+fh.setFormatter(formatter)
+ch.setFormatter(formatter)
+
+logger.addHandler(fh)
+logger.addHandler(ch)
 
 class Radio(commands.Cog):
 
@@ -61,69 +79,61 @@ class Radio(commands.Cog):
                 self.atomic = False
                 await self.init_radio('1',None)
               except Exception as e:
-                   print(e)
+                   logger.error('Ошибка в check_play %s',e)
 
     
     async def atomic_heart(self):
-            
+            logger.info('## RAD : Atomic heart был избран.')
             '''if not self.voice_client is None:
                 ＃if self.voice_client.is_playing():
                     await self.voice_client.disconnect()'''  
             self.voice_client.pause()
-            print('## RAD : Atomic heart был избран.')
             self.atomic = True
             chosen_song = random.choice(list(self.atomic_playlist.keys()))
-            #print(chosen_song)
             self.previous = chosen_song
-            await self.sys.change_presence(activity=discord.Activity(type=discord.ActivityType.listening, name=chosen_song)) 
-            voice =  discord.utils.get(self.union.voice_channels, id=1085214777246224424) 
-            #self.voice_client = await voice.connect() if not self.voice_client is None else print('passing')
-            #print(chosen_song)
-            #print(self.atomic_playlist.get(chosen_song))
+            await self.sys.change_presence(activity=discord.Activity(type=discord.ActivityType.listening, name=chosen_song))  
             with youtube_dl.YoutubeDL(self.YDL_OPTIONS) as ydl:
                 info = ydl.extract_info(self.atomic_playlist.get(chosen_song), download = False)
                 source = FFmpegPCMAudio(source=info['formats'][8]['fragments'][0]['url'],before_options='-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5',options='-vn')  
                 self.voice_client.play(source)
+                logging.info('## RAD: Начало трансляции atomic.')
 
     @tasks.loop(seconds=5.0)
     async def update_status(self):
         try:
-            print(self.dev_test)
-            print(f'## RAD : Атомный режим - {self.atomic}')
-            
+            logger.info(f'## RAD : Атомный режим - {self.atomic}')
             html = requests.get('http://station.waveradio.org').text
             title = [x for x in html.split('<td class="streamstats">') if 'Sovietwave' in x][2].split('</td>')[0]
-            print(f'## RAD : Музыка сейчас - {title}, музыка до {self.previous}')
+            logger.info(f'## RAD : Музыка сейчас - {title}, музыка до {self.previous}')
             if title != self.previous and not self.atomic or self.dev_test:
-                print('＃＃RAD ： Выбор...')
-                print(self.chance)
+                logger.info('＃＃RAD ： Выбор...')
                 if random.randint(0,100) <= self.chance and not self.was_atomic:
                     if self.voice_client is not None:
                         await self.atomic_heart()
-                #else:
-                    ##await self.init_radio('1',None)
             if not self.atomic:
                 if title != self.previous and not self.atomic or self.dev_test:self.was_atomic = not self.was_atomic
                 self.previous = title
                 await self.sys.change_presence(activity=discord.Activity(type=discord.ActivityType.listening, name=title)) 
-            print(f'## RAD : {self.previous}')
         except Exception as e:
-             print(e)
+             logger.error('## RAD : Ошибка в update_status - %s',e)
 
 
     @commands.command()
     @commands.is_owner()
     async def set_gib(self,x=None):
+         logger.warn('#RAD : set_gib зайдействована!')
          self.previous = '1'
 
     @commands.command()
     @commands.is_owner()
     async def set_dev(self,x=None):
+         logger.warn('#RAD : set_dev зайдействована!')
          self.dev_test = not self.dev_test
 
     @commands.command()
     @commands.is_owner()
     async def set_chance(self,ctx,x):
+         logger.warn('#RAD : set_chance %s',int(ctx.message.content.split()[1]))
          self.chance = int(ctx.message.content.split()[1])
          print(self.chance)
 
@@ -139,10 +149,14 @@ class Radio(commands.Cog):
 
     @commands.command()
     async def stopRad(self,ctx):
+        logger.warn('# RAD : Отключение от канала')
         for x in self.sys.voice_clients:
                 return await x.disconnect()
         
     async def init_radio(self,ctx,vc=None): 
+            logger.info('# RAD : Запукс радио')
+            self.atomic = False
+            self.was_atomic = True
             if not self.voice_client is None:
                 for x in self.sys.voice_clients:
                         return await x.disconnect()
@@ -151,7 +165,7 @@ class Radio(commands.Cog):
             try:self.check_play.start()
             except Exception as e:
                  print(e)
-            voice =  discord.utils.get(self.union.voice_channels, id=1085214777246224424)  if vc == None else discord.utils.get(self.union.voice_channels, id=int(vc))
+            voice =  discord.utils.get(self.union.voice_channels, id=1085941911304544336)  if vc == None else discord.utils.get(self.union.voice_channels, id=int(vc))
             self.voice_client = await voice.connect()
             source = FFmpegPCMAudio(source='http://station.waveradio.org/soviet',before_options='-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5',options='-vn')  
             self.voice_client.play(source)
@@ -166,13 +180,13 @@ class Radio(commands.Cog):
     @commands.is_owner() 
     async def init_ah(self,ctx,vc=None):
             self.voice_client.pause()
-            print('## RAD : Atomic heart был избран.')
+            #print('## RAD : Atomic heart был избран.')
             self.atomic = True
             chosen_song = random.choice(list(self.atomic_playlist.keys()))
             #print(chosen_song)
             self.previous = chosen_song
             await self.sys.change_presence(activity=discord.Activity(type=discord.ActivityType.listening, name=chosen_song)) 
-            voice =  discord.utils.get(self.union.voice_channels, id=1085214777246224424) 
+            voice =  discord.utils.get(self.union.voice_channels, id=1085941911304544336) 
             self.voice_client = await voice.connect()
             #print(chosen_song)
             #print(self.atomic_playlist.get(chosen_song))
